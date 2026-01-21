@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中医望诊智慧 - 中医AI智能望诊系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <style>
+        /* 自定义CSS变量 */
+        :root {
+            --primary-color: #dc2626;
+            --secondary-color: #f59e0b;
+            --accent-color: #059669;
+            --gradient-primary: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            --gradient-secondary: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            --gradient-accent: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* 导航栏样式 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar.scrolled .nav-link {
+            color: #1f2937;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        /* 英雄区域 */
+        .hero-section {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-bg-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            background-image:
+                radial-gradient(circle at 20% 80%, white 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, white 0%, transparent 50%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* 浮动粒子背景 */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: particle-float 20s infinite linear;
+        }
+
+        @keyframes particle-float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* 内容卡片样式 */
+        .content-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s ease;
+            overflow: hidden;
+        }
+
+        .content-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .content-card:hover .card-image {
+            transform: scale(1.05);
+        }
+
+        /* 面色类型卡片 */
+        .complexion-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .complexion-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .complexion-card.red::before { background: var(--gradient-primary); }
+        .complexion-card.black::before { background: var(--gradient-secondary); }
+        .complexion-card.white::before { background: linear-gradient(135deg, #f3f4f6 0%, #d1d5db 100%); }
+        .complexion-card.yellow::before { background: var(--gradient-accent); }
+        .complexion-card.blue::before { background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); }
+
+        .complexion-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 时间线样式 */
+        .timeline {
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, transparent, var(--primary-color), transparent);
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin: 3rem 0;
+        }
+
+        .timeline-content {
+            width: 45%;
+            padding: 2rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content {
+            margin-left: auto;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 0 4px white, 0 0 0 6px var(--primary-color);
+        }
+
+        /* 统计数字动画 */
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* 按钮样式 */
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(220, 38, 38, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary-color);
+            padding: 1rem 2rem;
+            border: 2px solid var(--primary-color);
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        /* 页面过渡动画 */
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease;
+        }
+
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .timeline::before {
+                left: 2rem;
+            }
+
+            .timeline-content {
+                width: calc(100% - 4rem);
+                margin-left: 4rem !important;
+            }
+
+            .timeline-dot {
+                left: 2rem;
+            }
+
+            .hero-title {
+                font-size: 2.5rem !important;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+        }
+
+        /* 加载动画 */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-content {
+            text-align: center;
+            color: white;
+        }
+
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 滚动指示器 */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-20px); }
+            60% { transform: translateX(-50%) translateY(-10px); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 加载动画 -->
+    <div class="loader" id="loader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <h2 class="text-2xl font-bold mb-2">中医AI智能望诊系统</h2>
+            <p class="text-white/80">传承千年智慧，融合现代科技</p>
+        </div>
+    </div>
+
+    <!-- 导航栏 -->
+    <nav class="navbar" id="navbar">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="ri-heart-pulse-fill text-3xl text-red-600"></i>
+                    <span class="text-xl font-bold text-gray-800">中医AI智能望诊</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#home" class="nav-link">首页</a>
+                    <a href="#about" class="nav-link">关于望诊</a>
+                    <a href="#complexion" class="nav-link">面色类型</a>
+                    <a href="#history" class="nav-link">历史传承</a>
+                    <a href="#technology" class="nav-link">科技融合</a>
+                    <a href="#start" class="nav-link">开始体验</a>
+                </div>
+                <button class="md:hidden text-gray-800" id="mobileMenuBtn">
+                    <i class="ri-menu-line text-2xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 移动端菜单 -->
+    <div class="fixed inset-0 bg-black/50 z-50 hidden" id="mobileMenu">
+        <div class="bg-white w-64 h-full p-6">
+            <div class="flex justify-between items-center mb-8">
+                <span class="text-lg font-bold">导航菜单</span>
+                <button id="closeMobileMenu">
+                    <i class="ri-close-line text-2xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <a href="#home" class="block py-2 text-gray-700 hover:text-red-600 mobile-nav-link">首页</a>
+                <a href="#about" class="block py-2 text-gray-700 hover:text-red-600 mobile-nav-link">关于望诊</a>
+                <a href="#complexion" class="block py-2 text-gray-700 hover:text-red-600 mobile-nav-link">面色类型</a>
+                <a href="#history" class="block py-2 text-gray-700 hover:text-red-600 mobile-nav-link">历史传承</a>
+                <a href="#technology" class="block py-2 text-gray-700 hover:text-red-600 mobile-nav-link">科技融合</a>
+                <a href="#start" class="block py-2 text-gray-700 hover:text-red-600 mobile-nav-link">开始体验</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 英雄区域 -->
+    <section class="hero-section" id="home">
+        <div class="hero-bg-pattern"></div>
+        <div class="particles" id="particles"></div>
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="text-white" data-aos="fade-right">
+                    <h1 class="text-5xl md:text-6xl font-bold mb-6 hero-title">
+                        中医望诊智慧
+                        <span class="block text-3xl md:text-4xl mt-4 text-white/90">
+                            传承千年，智能新生
+                        </span>
+                    </h1>
+                    <p class="text-xl text-white/80 mb-8 leading-relaxed">
+                        望而知之谓之神。中医望诊作为四诊之首，通过观察面色、形态等外在表现，
+                        洞察人体内在健康状态。如今，我们融合现代AI技术，让这份古老智慧焕发新生。
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="/analyze" class="btn-primary text-center">
+                            <i class="ri-arrow-right-line mr-2"></i>开始体验
+                        </a>
+                        <a href="#about" class="btn-secondary text-center">
+                            <i class="ri-play-circle-line mr-2"></i>了解更多
+                        </a>
+                    </div>
+                    <div class="mt-12 grid grid-cols-3 gap-6">
+                        <div class="text-center">
+                            <div class="stat-number" data-target="2000">0</div>
+                            <div class="text-white/80">年历史传承</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="stat-number" data-target="95">0</div>
+                            <div class="text-white/80">%准确率</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="stat-number" data-target="5">0</div>
+                            <div class="text-white/80">种面色类型</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative" data-aos="fade-left">
+                    <div class="content-card">
+                        <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
+                             alt="中医望诊"
+                             class="card-image rounded-t-xl">
+                        <div class="p-6">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-4">AI智能望诊</h3>
+                            <p class="text-gray-600 mb-4">
+                                结合传统中医理论与现代人工智能技术，通过面部图像分析，为您提供个性化的健康评估与调理建议。
+                            </p>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <i class="ri-time-line mr-2"></i>
+                                <span>分析时间：仅需30秒</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <i class="ri-arrow-down-s-line text-4xl text-white/60"></i>
+        </div>
+    </section>
+
+    <!-- 关于望诊 -->
+    <section class="py-20 bg-white" id="about">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold text-gray-800 mb-4">什么是中医望诊</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    望诊是中医四诊（望、闻、问、切）之首，是通过观察神色、形态、面色等外在表现，
+                    判断人体内在脏腑气血变化的诊断方法
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div data-aos="fade-right">
+                    <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
+                         alt="中医望诊图"
+                         class="rounded-2xl shadow-2xl">
+                </div>
+                <div data-aos="fade-left">
+                    <h3 class="text-3xl font-bold text-gray-800 mb-6">望诊的核心理念</h3>
+                    <div class="space-y-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                <i class="ri-eye-line text-red-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-semibold text-gray-800 mb-2">有诸内必形诸外</h4>
+                                <p class="text-gray-600">
+                                    人体内在脏腑气血的变化，必然会通过外在的神色形态表现出来。
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="ri-compass-3-line text-blue-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-semibold text-gray-800 mb-2">整体观念</h4>
+                                <p class="text-gray-600">
+                                    通过局部表现判断整体状态，实现"见微知著"的诊断效果。
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="ri-heart-3-line text-green-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-semibold text-gray-800 mb-2">辨证论治</h4>
+                                <p class="text-gray-600">
+                                    根据望诊结果，结合中医理论进行辨证，制定个性化的调理方案。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 面色类型 -->
+    <section class="py-20 bg-gray-50" id="complexion">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold text-gray-800 mb-4">五色主病</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    中医通过观察面部颜色来判断健康状况，五色分别对应不同的脏腑病理变化
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- 红色 - 阴虚火旺 -->
+                <div class="complexion-card red" data-aos="fade-up" data-aos-delay="100">
+                    <div class="flex items-center mb-4">
+                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                            <span class="text-2xl">🔴</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">红色</h3>
+                            <p class="text-gray-600">阴虚火旺型</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">
+                        面色红赤多见于热证，尤以阴虚火旺最为常见。主要表现为两颧潮红、五心烦热、口干咽燥等。
+                    </p>
+                    <div class="text-sm text-gray-600">
+                        <strong>常见症状：</strong>失眠多梦、盗汗、舌红少苔
+                    </div>
+                </div>
+
+                <!-- 黑色 - 肾虚寒盛 -->
+                <div class="complexion-card black" data-aos="fade-up" data-aos-delay="200">
+                    <div class="flex items-center mb-4">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                            <span class="text-2xl">⚫</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">黑色</h3>
+                            <p class="text-gray-600">肾虚寒盛型</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">
+                        面色黑晦多与肾虚相关，特别是肾阳不足。表现为面色黧黑、畏寒肢冷、腰膝酸软等。
+                    </p>
+                    <div class="text-sm text-gray-600">
+                        <strong>常见症状：</strong>水肿、夜尿频多、性欲减退
+                    </div>
+                </div>
+
+                <!-- 白色 - 气血两虚 -->
+                <div class="complexion-card white" data-aos="fade-up" data-aos-delay="300">
+                    <div class="flex items-center mb-4">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                            <span class="text-2xl">⚪</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">白色</h3>
+                            <p class="text-gray-600">气血两虚型</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">
+                        面色㿠白多主虚证，特别是气血两虚。表现为面色苍白无华、神疲乏力、头晕心悸等。
+                    </p>
+                    <div class="text-sm text-gray-600">
+                        <strong>常见症状：</strong>气短懒言、自汗、舌淡脉弱
+                    </div>
+                </div>
+
+                <!-- 黄色 - 脾虚湿盛 -->
+                <div class="complexion-card yellow" data-aos="fade-up" data-aos-delay="400">
+                    <div class="flex items-center mb-4">
+                        <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mr-4">
+                            <span class="text-2xl">🟡</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">黄色</h3>
+                            <p class="text-gray-600">脾虚湿盛型</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">
+                        面色萎黄多与脾虚相关，特别是脾虚湿蕴。表现为面色萎黄、四肢困重、食欲不振等。
+                    </p>
+                    <div class="text-sm text-gray-600">
+                        <strong>常见症状：</strong>腹胀便溏、舌苔厚腻、身重乏力
+                    </div>
+                </div>
+
+                <!-- 青色 - 寒凝血瘀 -->
+                <div class="complexion-card blue" data-aos="fade-up" data-aos-delay="500">
+                    <div class="flex items-center mb-4">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                            <span class="text-2xl">🔵</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">青色</h3>
+                            <p class="text-gray-600">寒凝血瘀型</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">
+                        面色青紫多主寒证、瘀证。表现为面色青紫、四肢厥冷、疼痛不移等。
+                    </p>
+                    <div class="text-sm text-gray-600">
+                        <strong>常见症状：</strong>胸痛腹痛、痛经、舌质紫暗
+                    </div>
+                </div>
+
+                <!-- AI分析卡片 -->
+                <div class="complexion-card bg-gradient-to-br from-purple-500 to-pink-500 text-white" data-aos="fade-up" data-aos-delay="600">
+                    <div class="flex items-center mb-4">
+                        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mr-4">
+                            <i class="ri-robot-line text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">AI智能分析</h3>
+                            <p class="text-white/80">精准识别</p>
+                        </div>
+                    </div>
+                    <p class="text-white/90 mb-4">
+                        通过深度学习算法，我们的AI系统能够精准识别面部特征，结合中医理论进行智能分析。
+                    </p>
+                    <div class="text-sm text-white/80">
+                        <strong>技术优势：</strong>准确率95%+、分析速度30秒、个性化建议
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 历史传承 -->
+    <section class="py-20 bg-white" id="history">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold text-gray-800 mb-4">千年传承</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    中医望诊源远流长，历经千年发展，形成了完整的理论体系
+                </p>
+            </div>
+
+            <div class="timeline">
+                <div class="timeline-item" data-aos="fade-right">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">春秋战国</h3>
+                        <p class="text-gray-600 mb-2"><i class="ri-calendar-line mr-2"></i>公元前770-221年</p>
+                        <p class="text-gray-700">
+                            《黄帝内经》确立望诊理论基础，提出"望而知之谓之神"的医学思想。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="timeline-item" data-aos="fade-left">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">东汉时期</h3>
+                        <p class="text-gray-600 mb-2"><i class="ri-calendar-line mr-2"></i>公元25-220年</p>
+                        <p class="text-gray-700">
+                            张仲景《伤寒杂病论》系统总结望诊经验，奠定辨证论治基础。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="timeline-item" data-aos="fade-right">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">明代发展</h3>
+                        <p class="text-gray-600 mb-2"><i class="ri-calendar-line mr-2"></i>公元1368-1644年</p>
+                        <p class="text-gray-700">
+                            望诊理论日趋完善，出现大量专科著作，形成系统化望诊体系。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="timeline-item" data-aos="fade-left">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">现代创新</h3>
+                        <p class="text-gray-600 mb-2"><i class="ri-calendar-line mr-2"></i>21世纪</p>
+                        <p class="text-gray-700">
+                            融合人工智能技术，实现望诊客观化、标准化、智能化发展。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 科技融合 -->
+    <section class="py-20 bg-gray-50" id="technology">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold text-gray-800 mb-4">科技融合</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    传统智慧与现代科技的完美结合，让中医望诊焕发新的生机
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="ri-camera-line text-3xl text-blue-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">高清图像采集</h3>
+                    <p class="text-gray-600">
+                        采用先进图像处理技术，确保面部特征清晰准确
+                    </p>
+                </div>
+
+                <div class="text-center" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="ri-cpu-line text-3xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">深度学习分析</h3>
+                    <p class="text-gray-600">
+                        基于海量训练数据，实现精准的面部特征识别
+                    </p>
+                </div>
+
+                <div class="text-center" data-aos="fade-up" data-aos-delay="300">
+                    <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="ri-database-2-line text-3xl text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">中医知识库</h3>
+                    <p class="text-gray-600">
+                        集成经典中医理论和现代临床经验
+                    </p>
+                </div>
+
+                <div class="text-center" data-aos="fade-up" data-aos-delay="400">
+                    <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="ri-file-text-line text-3xl text-red-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">智能报告生成</h3>
+                    <p class="text-gray-600">
+                        自动生成个性化健康报告和调理建议
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-16 bg-white rounded-2xl shadow-xl p-8" data-aos="fade-up">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">技术优势</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-center">
+                                <i class="ri-checkbox-circle-fill text-green-500 mr-3"></i>
+                                <span class="text-gray-700">准确率超过95%，远超传统目诊</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="ri-checkbox-circle-fill text-green-500 mr-3"></i>
+                                <span class="text-gray-700">分析时间仅需30秒，高效便捷</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="ri-checkbox-circle-fill text-green-500 mr-3"></i>
+                                <span class="text-gray-700">支持多种体质类型辨识</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="ri-checkbox-circle-fill text-green-500 mr-3"></i>
+                                <span class="text-gray-700">提供个性化调理方案</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="bg-gray-50 rounded-xl p-6">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">技术指标</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-gray-600">分析准确率</span>
+                                        <span class="text-green-600 font-bold">95%+</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-green-500 h-2 rounded-full" style="width: 95%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-gray-600">分析速度</span>
+                                        <span class="text-blue-600 font-bold">30秒</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-500 h-2 rounded-full" style="width: 90%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-gray-600">用户满意度</span>
+                                        <span class="text-purple-600 font-bold">98%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-purple-500 h-2 rounded-full" style="width: 98%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 开始体验 -->
+    <section class="py-20 bg-gradient-to-br from-red-600 to-pink-600 text-white" id="start">
+        <div class="container mx-auto px-6 text-center">
+            <div class="max-w-4xl mx-auto" data-aos="fade-up">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6">开启您的中医健康之旅</h2>
+                <p class="text-xl text-white/90 mb-8 leading-relaxed">
+                    体验千年中医智慧与现代科技的完美融合，通过AI智能望诊，
+                    深入了解您的身体状况，获得专业的健康指导。
+                </p>
+                <div class="grid md:grid-cols-3 gap-8 mb-12">
+                    <div class="bg-white/10 backdrop-filter backdrop-blur-lg rounded-xl p-6">
+                        <i class="ri-camera-lens-line text-4xl mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">1. 上传照片</h3>
+                        <p class="text-white/80">拍摄或上传清晰的面部照片</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-filter backdrop-blur-lg rounded-xl p-6">
+                        <i class="ri-search-eye-line text-4xl mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">2. AI分析</h3>
+                        <p class="text-white/80">系统自动进行面色特征分析</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-filter backdrop-blur-lg rounded-xl p-6">
+                        <i class="ri-file-list-3-line text-4xl mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">3. 获取报告</h3>
+                        <p class="text-white/80">获得专业的健康评估报告</p>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="/analyze" class="bg-white text-red-600 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition transform hover:scale-105 inline-flex items-center justify-center">
+                        <i class="ri-arrow-right-line mr-2"></i>
+                        立即开始体验
+                    </a>
+                    <a href="#home" class="border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-red-600 transition transform hover:scale-105 inline-flex items-center justify-center">
+                        <i class="ri-arrow-up-line mr-2"></i>
+                        返回顶部
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i class="ri-heart-pulse-fill text-3xl text-red-500"></i>
+                        <span class="text-xl font-bold">中医AI智能望诊</span>
+                    </div>
+                    <p class="text-gray-400">
+                        传承千年中医智慧，融合现代AI技术，为您的健康保驾护航。
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">产品功能</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li>AI智能分析</li>
+                        <li>健康评估</li>
+                        <li>调理建议</li>
+                        <li>在线咨询</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">技术支持</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li>深度学习</li>
+                        <li>图像识别</li>
+                        <li>数据安全</li>
+                        <li>隐私保护</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">联系我们</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li class="flex items-center">
+                            <i class="ri-mail-line mr-2"></i>
+                            support@tcm-ai.com
+                        </li>
+                        <li class="flex items-center">
+                            <i class="ri-phone-line mr-2"></i>
+                            400-123-4567
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 中医AI智能望诊系统. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script>
+        // 初始化AOS动画库
+        AOS.init({
+            duration: 1000,
+            once: true,
+            offset: 100
+        });
+
+        // 页面加载完成后隐藏加载动画
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 1000);
+        });
+
+        // 导航栏滚动效果
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // 移动端菜单
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.remove('hidden');
+        });
+
+        closeMobileMenu.addEventListener('click', () => {
+            mobileMenu.classList.add('hidden');
+        });
+
+        // 移动端导航链接点击后关闭菜单
+        document.querySelectorAll('.mobile-nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // 生成粒子背景
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.width = Math.random() * 10 + 5 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (Math.random() * 20 + 20) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        createParticles();
+
+        // 数字动画效果
+        function animateNumbers() {
+            const numbers = document.querySelectorAll('.stat-number');
+
+            numbers.forEach(number => {
+                const target = parseInt(number.getAttribute('data-target'));
+                const increment = target / 100;
+                let current = 0;
+
+                const updateNumber = () => {
+                    current += increment;
+                    if (current < target) {
+                        number.textContent = Math.floor(current);
+                        requestAnimationFrame(updateNumber);
+                    } else {
+                        number.textContent = target;
+                    }
+                };
+
+                updateNumber();
+            });
+        }
+
+        // 当统计数字区域进入视口时开始动画
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateNumbers();
+                    observer.disconnect();
+                }
+            });
+        });
+
+        const statsSection = document.querySelector('.hero-section');
+        if (statsSection) {
+            observer.observe(statsSection);
+        }
+
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // 滚动时的渐入效果
+        const fadeElements = document.querySelectorAll('.fade-in-up');
+
+        const fadeObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+
+        fadeElements.forEach(element => {
+            fadeObserver.observe(element);
+        });
+    </script>
+</body>
+</html>

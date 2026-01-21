@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中医AI智能望诊系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #6366f1;
+            background-color: #f8fafc;
+        }
+        .upload-area.dragover {
+            border-color: #6366f1;
+            background-color: #eef2ff;
+        }
+        .complexion-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .complexion-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .chat-message {
+            animation: fadeInUp 0.3s ease;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <!-- 头部导航 -->
+    <nav class="glass-effect shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="ri-heart-pulse-fill text-3xl text-indigo-600 mr-3"></i>
+                    <h1 class="text-xl font-bold text-gray-800">中医AI智能望诊系统</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="introBtn" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 transition">
+                        <i class="ri-home-line mr-1"></i>返回首页
+                    </button>
+                    <button id="healthBtn" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 transition">
+                        <i class="ri-pulse-line mr-1"></i>系统状态
+                    </button>
+                    <button id="resetBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
+                        <i class="ri-refresh-line mr-1"></i>重置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 功能选择标签页 -->
+        <div class="glass-effect rounded-xl shadow-xl p-6 mb-8">
+            <div class="flex space-x-1 mb-6">
+                <button class="tab-btn active px-6 py-3 text-sm font-medium rounded-lg transition" data-tab="analyze">
+                    <i class="ri-image-2-line mr-2"></i>图像分析
+                </button>
+                <button class="tab-btn px-6 py-3 text-sm font-medium rounded-lg transition" data-tab="chat">
+                    <i class="ri-chat-3-line mr-2"></i>智能咨询
+                </button>
+                <button class="tab-btn px-6 py-3 text-sm font-medium rounded-lg transition" data-tab="report">
+                    <i class="ri-file-text-line mr-2"></i>检测报告
+                </button>
+            </div>
+
+            <!-- 图像分析标签页 -->
+            <div id="analyze-tab" class="tab-content">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- 左侧：图片上传区域 -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="ri-upload-cloud-line mr-2"></i>上传面部照片
+                        </h3>
+                        <div id="uploadArea" class="upload-area rounded-xl p-8 text-center cursor-pointer">
+                            <i class="ri-image-add-line text-5xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-600 mb-2">点击或拖拽图片到这里</p>
+                            <p class="text-sm text-gray-500">支持 JPG、PNG、GIF 格式，最大 16MB</p>
+                            <input type="file" id="fileInput" accept="image/*" class="hidden">
+                        </div>
+
+                        <!-- 图片预览 -->
+                        <div id="imagePreview" class="mt-4 hidden">
+                            <img id="previewImg" class="w-full rounded-lg shadow-lg" alt="预览图片">
+                            <div class="mt-3 flex justify-between items-center">
+                                <span id="fileName" class="text-sm text-gray-600"></span>
+                                <button id="removeImage" class="text-red-500 hover:text-red-700">
+                                    <i class="ri-delete-bin-line mr-1"></i>删除
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 患者信息表单 -->
+                        <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                            <h4 class="font-medium text-gray-800 mb-3">
+                                <i class="ri-user-line mr-2"></i>患者信息
+                            </h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <input type="text" id="patientName" placeholder="姓名"
+                                    class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <input type="number" id="patientAge" placeholder="年龄" min="1" max="150"
+                                    class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <select id="patientGender" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <option value="">请选择性别</option>
+                                    <option value="男">男</option>
+                                    <option value="女">女</option>
+                                </select>
+                                <input type="text" id="patientPhone" placeholder="联系电话（可选）"
+                                    class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <!-- 分析按钮 -->
+                        <button id="analyzeBtn" class="w-full mt-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            <i class="ri-search-line mr-2"></i>开始分析
+                        </button>
+                    </div>
+
+                    <!-- 右侧：分析结果 -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="ri-microscope-line mr-2"></i>分析结果
+                        </h3>
+                        <div id="analysisResult" class="space-y-4">
+                            <!-- 初始状态 -->
+                            <div class="text-center py-12 bg-gray-50 rounded-lg">
+                                <i class="ri-image-line text-5xl text-gray-300 mb-4"></i>
+                                <p class="text-gray-500">请上传照片进行分析</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 智能咨询标签页 -->
+            <div id="chat-tab" class="tab-content hidden">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- 左侧：面色类型选择 -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="ri-palette-line mr-2"></i>面色类型
+                        </h3>
+                        <div id="complexionTypes" class="space-y-3">
+                            <!-- 面色类型卡片将通过JS动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 中间：聊天区域 -->
+                    <div class="md:col-span-2">
+                        <div class="glass-effect rounded-xl h-96 flex flex-col">
+                            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="chatMessages">
+                                <div class="text-center text-gray-500 py-8">
+                                    <i class="ri-robot-line text-4xl mb-2"></i>
+                                    <p>选择面色类型后开始咨询</p>
+                                </div>
+                            </div>
+                            <div class="border-t p-4">
+                                <div class="flex space-x-2">
+                                    <input type="text" id="chatInput" placeholder="请输入您的问题..."
+                                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <button id="sendBtn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                                        <i class="ri-send-plane-fill"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 检测报告标签页 -->
+            <div id="report-tab" class="tab-content hidden">
+                <div class="max-w-4xl mx-auto">
+                    <div class="text-center mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">
+                            <i class="ri-file-search-line mr-2"></i>详细检测报告
+                        </h3>
+                        <p class="text-gray-600">基于AI分析的中医健康状况评估</p>
+                    </div>
+
+                    <div id="reportContent" class="glass-effect rounded-xl p-6">
+                        <div class="text-center py-12 bg-gray-50 rounded-lg">
+                            <i class="ri-file-text-line text-5xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500">请先进行图像分析</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-center space-x-4">
+                        <button id="downloadReport" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:bg-gray-400" disabled>
+                            <i class="ri-download-line mr-2"></i>下载报告
+                        </button>
+                        <button id="shareReport" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400" disabled>
+                            <i class="ri-share-line mr-2"></i>分享报告
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统状态弹窗 -->
+        <div id="healthModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+            <div class="glass-effect rounded-xl p-6 max-w-md w-full mx-4">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="ri-pulse-line mr-2"></i>系统状态
+                </h3>
+                <div id="healthStatus" class="space-y-3">
+                    <div class="flex items-center justify-center py-8">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button id="closeHealthModal" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">
+                        关闭
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast通知容器 -->
+    <div id="toastContainer" class="fixed top-20 right-4 z-50 space-y-2"></div>
+
+    <script>
+        // 全局变量
+        let currentComplexionType = null;
+        let currentAnalysisResult = null;
+        let sessionId = null;
+
+        // API基础URL
+        const API_BASE = 'http://localhost:5000/api';
+
+        // 工具函数
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const icons = {
+                success: 'ri-checkbox-circle-fill text-green-500',
+                error: 'ri-error-warning-fill text-red-500',
+                warning: 'ri-alert-fill text-yellow-500',
+                info: 'ri-information-fill text-blue-500'
+            };
+
+            toast.className = 'glass-effect rounded-lg p-4 shadow-lg flex items-center space-x-3 chat-message';
+            toast.innerHTML = `
+                <i class="${icons[type]} text-xl"></i>
+                <span class="text-gray-800">${message}</span>
+            `;
+
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function formatDateTime(timestamp) {
+            return new Date(timestamp).toLocaleString('zh-CN');
+        }
+
+        // 标签页切换
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+
+                // 更新按钮状态
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('active', 'bg-white', 'text-indigo-600', 'shadow-md');
+                    b.classList.add('text-gray-600');
+                });
+                btn.classList.add('active', 'bg-white', 'text-indigo-600', 'shadow-md');
+                btn.classList.remove('text-gray-600');
+
+                // 显示对应内容
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+            });
+        });
+
+        // 初始化激活标签页样式
+        document.querySelector('.tab-btn.active').classList.add('bg-white', 'text-indigo-600', 'shadow-md');
+        document.querySelector('.tab-btn.active').classList.remove('text-gray-600');
+
+        // 文件上传功能
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const fileName = document.getElementById('fileName');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('image/')) {
+                showToast('请选择图片文件', 'error');
+                return;
+            }
+
+            if (file.size > 16 * 1024 * 1024) {
+                showToast('文件大小不能超过16MB', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                fileName.textContent = file.name;
+                imagePreview.classList.remove('hidden');
+                uploadArea.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('removeImage').addEventListener('click', () => {
+            imagePreview.classList.add('hidden');
+            uploadArea.classList.remove('hidden');
+            fileInput.value = '';
+            previewImg.src = '';
+        });
+
+        // 图像分析功能
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            if (!fileInput.files.length) {
+                showToast('请先上传图片', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('analyzeBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner inline-block w-4 h-4 mr-2"></div>分析中...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+
+                const patientInfo = {
+                    name: document.getElementById('patientName').value || '未知',
+                    age: document.getElementById('patientAge').value || '未知',
+                    gender: document.getElementById('patientGender').value || '未知',
+                    phone: document.getElementById('patientPhone').value
+                };
+
+                formData.append('patient_info', JSON.stringify(patientInfo));
+
+                const response = await fetch(`${API_BASE}/analyze`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    currentAnalysisResult = result;
+                    displayAnalysisResult(result);
+                    showToast('分析完成！', 'success');
+
+                    // 自动切换到报告标签页
+                    setTimeout(() => {
+                        document.querySelector('[data-tab="report"]').click();
+                        generateReport(result);
+                    }, 1000);
+                } else {
+                    showToast(`分析失败: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('分析错误:', error);
+                showToast('网络错误，请稍后重试', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ri-search-line mr-2"></i>开始分析';
+            }
+        });
+
+        function displayAnalysisResult(result) {
+            const resultDiv = document.getElementById('analysisResult');
+            const complexion = result.complexion_info;
+
+            resultDiv.innerHTML = `
+                <div class="glass-effect rounded-lg p-6 space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="text-3xl">${complexion.icon}</div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800">${complexion.name}</h4>
+                            <p class="text-sm text-gray-600">${complexion.tcm_type}</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-gray-700">${complexion.description}</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="bg-blue-50 rounded-lg p-3">
+                            <div class="text-blue-800 font-medium">分析时间</div>
+                            <div class="text-blue-600">${formatDateTime(result.timestamp)}</div>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-3">
+                            <div class="text-green-800 font-medium">图像ID</div>
+                            <div class="text-green-600">${result.image_id.substring(0, 8)}...</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="flex items-start space-x-2">
+                            <i class="ri-alert-line text-yellow-600 mt-1"></i>
+                            <div class="text-sm text-yellow-800">
+                                <strong>温馨提示：</strong>此分析结果仅供参考，如有健康问题请咨询专业中医师。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 生成详细报告
+        async function generateReport(analysisResult) {
+            try {
+                const response = await fetch(`${API_BASE}/report`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        complexion_type: analysisResult.complexion_type,
+                        confidence: analysisResult.confidence,
+                        patient_info: analysisResult.patient_info
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.report) {
+                    displayReport(result);
+                    document.getElementById('downloadReport').disabled = false;
+                    document.getElementById('shareReport').disabled = false;
+                } else {
+                    showToast('报告生成失败', 'error');
+                }
+            } catch (error) {
+                console.error('报告生成错误:', error);
+                showToast('报告生成失败', 'error');
+            }
+        }
+
+        function displayReport(result) {
+            const reportContent = document.getElementById('reportContent');
+            reportContent.innerHTML = `
+                <div class="prose max-w-none">
+                    <div class="bg-white rounded-lg p-6 shadow-sm mb-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-xl font-semibold text-gray-800">中医智能检测报告</h4>
+                            <span class="text-sm text-gray-500">${formatDateTime(result.timestamp)}</span>
+                        </div>
+
+                        <div class="mb-6">
+                            <h5 class="font-medium text-gray-700 mb-2">面色分析结果</h5>
+                            <div class="flex items-center space-x-3 mb-3">
+                                <span class="text-2xl">${result.complexion_info.icon}</span>
+                                <div>
+                                    <span class="font-medium">${result.complexion_info.name}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <h5 class="font-medium text-gray-700 mb-2">中医诊断建议</h5>
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <pre class="whitespace-pre-wrap text-gray-700 font-sans text-sm">${result.report}</pre>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">姓名：</span>
+                                <span class="font-medium">${currentAnalysisResult.patient_info.name || '未知'}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">年龄：</span>
+                                <span class="font-medium">${currentAnalysisResult.patient_info.age || '未知'}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">性别：</span>
+                                <span class="font-medium">${currentAnalysisResult.patient_info.gender || '未知'}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">报告ID：</span>
+                                <span class="font-medium">${currentAnalysisResult.image_id.substring(0, 12)}...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 加载面色类型
+        async function loadComplexionTypes() {
+            try {
+                const response = await fetch(`${API_BASE}/complexion_types`);
+                const data = await response.json();
+
+                const container = document.getElementById('complexionTypes');
+                container.innerHTML = '';
+
+                Object.entries(data.complexion_types).forEach(([type, info]) => {
+                    const card = document.createElement('div');
+                    card.className = 'complexion-card glass-effect rounded-lg p-4 border-2 border-transparent';
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="text-2xl">${info.icon}</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-gray-800">${info.name}</div>
+                                <div class="text-sm text-gray-600">${info.tcm_type}</div>
+                            </div>
+                        </div>
+                    `;
+
+                    card.addEventListener('click', () => selectComplexionType(type, card));
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                console.error('加载面色类型失败:', error);
+            }
+        }
+
+        function selectComplexionType(type, card) {
+            // 更新UI状态
+            document.querySelectorAll('.complexion-card').forEach(c => {
+                c.classList.remove('border-indigo-500', 'bg-indigo-50');
+                c.classList.add('border-transparent');
+            });
+
+            card.classList.remove('border-transparent');
+            card.classList.add('border-indigo-500', 'bg-indigo-50');
+
+            currentComplexionType = parseInt(type);
+            showToast(`已选择${card.querySelector('.font-medium').textContent}`, 'success');
+
+            // 清空聊天历史，准备新会话
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="chat-message">
+                    <div class="flex items-start space-x-2">
+                        <i class="ri-robot-line text-indigo-600 mt-1"></i>
+                        <div class="bg-indigo-100 rounded-lg p-3 max-w-md">
+                            <p class="text-sm text-gray-800">您好！我是您的中医健康顾问，请输入您想咨询的问题。</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            sessionId = 'session_' + Date.now();
+        }
+
+        // 聊天功能
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            if (!currentComplexionType) {
+                showToast('请先选择面色类型', 'warning');
+                return;
+            }
+
+            // 添加用户消息
+            addChatMessage(message, 'user');
+            chatInput.value = '';
+
+            // 发送到服务器
+            chatWithAI(message);
+        }
+
+        function addChatMessage(message, sender) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message';
+
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start space-x-2 justify-end">
+                        <div class="bg-gray-100 rounded-lg p-3 max-w-md">
+                            <p class="text-sm text-gray-800">${message}</p>
+                        </div>
+                        <i class="ri-user-3-fill text-gray-600 mt-1"></i>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start space-x-2">
+                        <i class="ri-robot-line text-indigo-600 mt-1"></i>
+                        <div class="bg-indigo-100 rounded-lg p-3 max-w-md">
+                            <p class="text-sm text-gray-800">${message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        async function chatWithAI(message) {
+            // 显示加载状态
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'chat-message';
+            loadingDiv.innerHTML = `
+                <div class="flex items-start space-x-2">
+                    <i class="ri-robot-line text-indigo-600 mt-1"></i>
+                    <div class="bg-gray-100 rounded-lg p-3">
+                        <div class="loading-spinner inline-block w-4 h-4"></div>
+                        <span class="text-sm text-gray-600 ml-2">思考中...</span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('chatMessages').appendChild(loadingDiv);
+
+            try {
+                const patientInfo = {
+                    name: document.getElementById('patientName').value || '未知',
+                    age: document.getElementById('patientAge').value || '未知',
+                    gender: document.getElementById('patientGender').value || '未知'
+                };
+
+                const response = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        complexion_type: currentComplexionType,
+                        message: message,
+                        patient_info: patientInfo,
+                        session_id: sessionId
+                    })
+                });
+
+                const result = await response.json();
+
+                // 移除加载状态
+                loadingDiv.remove();
+
+                if (result.response) {
+                    addChatMessage(result.response, 'ai');
+                } else {
+                    addChatMessage('抱歉，我现在无法回答这个问题。请稍后再试。', 'ai');
+                }
+            } catch (error) {
+                console.error('聊天错误:', error);
+                loadingDiv.remove();
+                addChatMessage('网络错误，请检查连接后重试。', 'ai');
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // 系统健康检查
+        document.getElementById('healthBtn').addEventListener('click', async () => {
+            const modal = document.getElementById('healthModal');
+            const statusDiv = document.getElementById('healthStatus');
+
+            modal.classList.remove('hidden');
+            statusDiv.innerHTML = `
+                <div class="flex items-center justify-center py-8">
+                    <div class="loading-spinner"></div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+
+                let statusHtml = '';
+                if (data.status === 'healthy') {
+                    statusHtml = `
+                        <div class="text-center mb-4">
+                            <i class="ri-checkbox-circle-fill text-5xl text-green-500"></i>
+                            <h4 class="text-lg font-medium text-gray-800 mt-2">系统运行正常</h4>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">系统状态</span>
+                                <span class="text-sm font-medium text-green-600">正常</span>
+                            </div>
+                            <div class="text-xs text-gray-500 text-center">检查时间: ${formatDateTime(data.timestamp)}</div>
+                        </div>
+                    `;
+
+                    // 模型状态
+                    for (const [model, status] of Object.entries(data.models)) {
+                        const modelName = {
+                            vgg_model: 'VGG16特征提取',
+                            autoencoder_model: '自编码器',
+                            svm_pipeline: 'SVM分类器',
+                            tcm_agent: 'TCM分析代理',
+                            face_detector: '面部检测器',
+                            landmark_predictor: '关键点检测器'
+                        }[model] || model;
+
+                        statusHtml += `
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">${modelName}</span>
+                                <span class="text-sm font-medium ${status ? 'text-green-600' : 'text-red-600'}">
+                                    ${status ? '已加载' : '未加载'}
+                                </span>
+                            </div>
+                        `;
+                    }
+                } else {
+                    statusHtml = `
+                        <div class="text-center">
+                            <i class="ri-error-warning-fill text-5xl text-red-500"></i>
+                            <h4 class="text-lg font-medium text-gray-800 mt-2">系统异常</h4>
+                            <p class="text-sm text-gray-600 mt-1">${data.message}</p>
+                        </div>
+                    `;
+                }
+
+                statusDiv.innerHTML = statusHtml;
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="text-center">
+                        <i class="ri-wifi-off-line text-5xl text-gray-400"></i>
+                        <h4 class="text-lg font-medium text-gray-800 mt-2">连接失败</h4>
+                        <p class="text-sm text-gray-600 mt-1">无法连接到服务器</p>
+                    </div>
+                `;
+            }
+        });
+
+        document.getElementById('closeHealthModal').addEventListener('click', () => {
+            document.getElementById('healthModal').classList.add('hidden');
+        });
+
+        // 返回首页导航
+        document.getElementById('introBtn').addEventListener('click', () => {
+            window.location.href = '/';
+        });
+
+        // 重置功能
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (confirm('确定要重置所有数据吗？')) {
+                location.reload();
+            }
+        });
+
+        // 报告下载和分享
+        document.getElementById('downloadReport').addEventListener('click', () => {
+            const reportContent = document.querySelector('#reportContent .prose').innerText;
+            const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `TCM检测报告_${currentAnalysisResult.patient_info.name}_${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('报告已下载', 'success');
+        });
+
+        document.getElementById('shareReport').addEventListener('click', () => {
+            if (navigator.share) {
+                navigator.share({
+                    title: '中医AI智能检测报告',
+                    text: `我的面色分析结果：${currentAnalysisResult.complexion_info.name} (${currentAnalysisResult.complexion_info.tcm_type})`,
+                    url: window.location.href
+                });
+            } else {
+                // 复制到剪贴板
+                const text = `中医AI智能检测报告\n面色类型：${currentAnalysisResult.complexion_info.name}\n中医类型：${currentAnalysisResult.complexion_info.tcm_type}`;
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('报告已复制到剪贴板', 'success');
+                });
+            }
+        });
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComplexionTypes();
+        });
+    </script>
+</body>
+</html>

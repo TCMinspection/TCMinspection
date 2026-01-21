@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API测试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background-color: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 中医AI系统 API测试</h1>
+
+    <div class="test-section">
+        <h2>1. 系统健康检查</h2>
+        <button onclick="testHealth()">测试 /api/health</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. 面色类型</h2>
+        <button onclick="testComplexionTypes()">测试 /api/complexion_types</button>
+        <div id="complexion-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. 网络诊断</h2>
+        <button onclick="diagnoseNetwork()">诊断网络连接</button>
+        <div id="network-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = '<p>正在测试...</p>';
+
+            try {
+                console.log('发送请求到:', `${API_BASE}/health`);
+                const response = await fetch(`${API_BASE}/health`);
+                console.log('响应状态:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('响应数据:', data);
+
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ 健康检查成功</h3>
+                        <p><strong>状态:</strong> ${data.status}</p>
+                        <p><strong>时间:</strong> ${data.timestamp}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('健康检查错误:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ 健康检查失败</h3>
+                        <p><strong>错误:</strong> ${error.message}</p>
+                        <p><strong>详细信息:</strong> ${error.stack}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testComplexionTypes() {
+            const resultDiv = document.getElementById('complexion-result');
+            resultDiv.innerHTML = '<p>正在测试...</p>';
+
+            try {
+                console.log('发送请求到:', `${API_BASE}/complexion_types`);
+                const response = await fetch(`${API_BASE}/complexion_types`);
+                console.log('响应状态:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('响应数据:', data);
+
+                const complexionCount = Object.keys(data.complexion_types).length;
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ 面色类型获取成功</h3>
+                        <p><strong>数量:</strong> ${complexionCount} 种面色类型</p>
+                        <pre>${JSON.stringify(data.complexion_types, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('面色类型错误:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ 面色类型获取失败</h3>
+                        <p><strong>错误:</strong> ${error.message}</p>
+                        <p><strong>详细信息:</strong> ${error.stack}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function diagnoseNetwork() {
+            const resultDiv = document.getElementById('network-result');
+
+            const diagnostics = [
+                `当前页面URL: ${window.location.href}`,
+                `API基础URL: ${API_BASE}`,
+                `User Agent: ${navigator.userAgent}`,
+                `在线状态: ${navigator.onLine ? '在线' : '离线'}`,
+            ];
+
+            // 测试连接
+            const img = new Image();
+            const startTime = Date.now();
+            img.onload = () => {
+                const loadTime = Date.now() - startTime;
+                diagnostics.push(`连接测试: ✅ 成功 (${loadTime}ms)`);
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>🔍 网络诊断结果</h3>
+                        <ul>
+                            ${diagnostics.map(d => `<li>${d}</li>`).join('')}
+                        </ul>
+                        <p><strong>建议:</strong> 网络连接正常，如果API仍无法访问，请检查服务器是否运行</p>
+                    </div>
+                `;
+            };
+            img.onerror = () => {
+                diagnostics.push(`连接测试: ❌ 失败`);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>🔍 网络诊断结果</h3>
+                        <ul>
+                            ${diagnostics.map(d => `<li>${d}</li>`).join('')}
+                        </ul>
+                        <p><strong>建议:</strong> 无法连接到服务器，请确保Flask应用正在运行</p>
+                    </div>
+                `;
+            };
+            img.src = `${API_BASE.replace('/api', '')}/static/test.png?${Date.now()}`;
+        }
+
+        // 页面加载时自动运行测试
+        window.onload = () => {
+            console.log('API测试页面加载完成');
+            console.log('API_BASE:', API_BASE);
+        };
+    </script>
+</body>
+</html>

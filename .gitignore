@@ -1,0 +1,59 @@
+# 大文件和模型权重（超过GitHub 100MB限制）
+*.zip
+*.pth
+*.ckpt
+*.pkl
+
+# 数据文件
+*.npy
+*.dat
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 项目特定
+temp/
+uploads/
+reports/
+conversation_memory/
+logs/
+*.log
+
+# Claude Code
+.claude/
+
+# Playwright
+.playwright-mcp/

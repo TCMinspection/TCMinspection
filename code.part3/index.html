@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中医望诊</title>
+    <style>
+        body {
+            font-family: 'SimSun', serif;
+            background-color: #f4f0e5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: #5d4037;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        nav {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            padding: 20px;
+            gap: 10px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #795548;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+
+        nav a:hover {
+            background-color: #9e7a6e;
+        }
+
+        section {
+            padding: 20px;
+            text-align: center;
+        }
+
+        #video-page {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        #video-page iframe {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: none;
+        }
+
+        #back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: #795548;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            z-index: 1002;
+        }
+
+        #back-button:hover {
+            background-color: #9e7a6e;
+        }
+
+        button {
+            background-color: #795548;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #9e7a6e;
+        }
+
+        input[type="file"] {
+            margin-top: 20px;
+        }
+
+        /* 欢迎页面样式 */
+        #welcome-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #faf8f3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+            color: #795548;
+            font-size: 24px;
+        }
+
+        #result-container {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 欢迎页面 -->
+    <div id="welcome-page">
+        欢迎使用中医智能望诊系统
+    </div>
+    <header>
+        <h1>中医望诊</h1>
+    </header>
+    <nav>
+        <a href="#" onclick="showVideoPage()">中医望诊介绍</a>
+        <a href="#" onclick="openUpload()">上传照片开始望诊</a>
+        <a href="#" onclick="openCamera()">打开摄像头实时望诊</a>
+    </nav>
+    <section>
+        <div id="upload-container" style="display: none;">
+            <h2>上传照片开始望诊</h2>
+            <label for="image-input">选择照片：</label>
+            <input type="file" id="image-input" accept="image/*">
+            <button onclick="submitPhoto()">提交照片</button>
+        </div>
+        <div id="camera-container" style="display: none;">
+            <h2>打开摄像头实时望诊</h2>
+            <video id="camera-feed" width="640" height="480" autoplay></video>
+            <button onclick="takePhoto()">拍照</button>
+            <button id="stop-button" onclick="stopDiagnosis()" style="display: none;">停止录像</button>
+        </div>
+        <div id="result-container">
+            <h2>诊断结果</h2>
+            <p id="result-text"></p>
+        </div>
+    </section>
+    <div id="video-page">
+        <button id="back-button" onclick="hideVideoPage()">返回</button>
+        <iframe src="//player.bilibili.com/player.html?isOutside=true&aid=937762786&bvid=BV1UT4y1e7XW&cid=564208420&p=1"
+            scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+    </div>
+    <script>
+        function showVideoPage() {
+            document.getElementById('video-page').style.display = 'block';
+            document.getElementById('upload-container').style.display = 'none';
+            document.getElementById('camera-container').style.display = 'none';
+            document.getElementById('result-container').style.display = 'none';
+        }
+
+        function hideVideoPage() {
+            const videoPage = document.getElementById('video-page');
+            if (videoPage) {
+                videoPage.style.display = 'none';
+                document.querySelector('nav').style.display = 'flex';
+                document.getElementById('upload-container').style.display = 'none';
+                document.getElementById('camera-container').style.display = 'none';
+                document.getElementById('result-container').style.display = 'none';
+            }
+        }
+
+        function openUpload() {
+            document.getElementById('video-page').style.display = 'none';
+            document.getElementById('upload-container').style.display = 'block';
+            document.getElementById('camera-container').style.display = 'none';
+            document.getElementById('result-container').style.display = 'none';
+        }
+
+        let mediaStream;
+        function openCamera() {
+            document.getElementById('video-page').style.display = 'none';
+            document.getElementById('upload-container').style.display = 'none';
+            document.getElementById('camera-container').style.display = 'block';
+            document.getElementById('result-container').style.display = 'none';
+            navigator.mediaDevices.getUserMedia({ video: true })
+               .then(function (stream) {
+                    const cameraFeed = document.getElementById('camera-feed');
+                    cameraFeed.srcObject = stream;
+                    mediaStream = stream;
+                })
+               .catch(function (error) {
+                    console.error('无法访问摄像头:', error);
+                });
+        }
+
+        function submitPhoto() {
+            const fileInput = document.getElementById('image-input');
+            const file = fileInput.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('image', file);
+                fetch('http://localhost:5000/diagnose', {
+                    method: 'POST',
+                    body: formData
+                })
+               .then(response => {
+                    return response.json();
+                })
+               .then(data => {
+                    if (data.prediction) {
+                        // 跳转到结果页面并携带诊断结果
+                        window.location.href = `result.html?prediction=${data.prediction}`;
+                    } else if (data.error) {
+                        alert(`错误：${data.error}`);
+                    }
+                })
+               .catch(error => {
+                    console.error('请求出错:', error);
+                });
+            } else {
+                alert('请选择照片');
+            }
+        }
+
+        function takePhoto() {
+            const cameraFeed = document.getElementById('camera-feed');
+            const canvas = document.createElement('canvas');
+            canvas.width = cameraFeed.videoWidth;
+            canvas.height = cameraFeed.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(cameraFeed, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(function (blob) {
+                const formData = new FormData();
+                formData.append('image', blob);
+                fetch('http://localhost:5000/real-time-diagnose', {
+                    method: 'POST',
+                    body: formData
+                })
+               .then(response => {
+                    return response.json();
+                })
+               .then(data => {
+                    if (data.prediction) {
+                        // 跳转到结果页面并携带诊断结果
+                        window.location.href = `result.html?prediction=${data.prediction}`;
+                    } else if (data.error) {
+                        alert(`错误：${data.error}`);
+                    }
+                })
+               .catch(error => {
+                    console.error('请求出错:', error);
+                });
+            }, 'image/jpeg');
+        }
+
+        function stopDiagnosis() {
+            if (mediaStream) {
+                const tracks = mediaStream.getTracks();
+                tracks.forEach(track => track.stop());
+                document.getElementById('camera-feed').srcObject = null;
+                document.getElementById('stop-button').style.display = 'none';
+            }
+        }
+
+        // 隐藏欢迎页面
+        setTimeout(() => {
+            const welcomePage = document.getElementById('welcome-page');
+            if (welcomePage) {
+                welcomePage.style.display = 'none';
+            }
+        }, 2000);
+    </script>
+</body>
+
+</html>
