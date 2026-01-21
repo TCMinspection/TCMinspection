@@ -57,3 +57,15 @@ logs/
 
 # Playwright
 .playwright-mcp/
+
+# Data, media, and generated assets
+imagesource/
+imagesource1/
+Gan_output/
+Diffusion/output/
+paper/
+Tools/
+*.pdf
+*.png
+*.jpg
+*.jpeg
