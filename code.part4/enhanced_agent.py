@@ -242,7 +242,7 @@ class TCMEnhancedAgent:
             return
 
         knowledge_urls = self.config.get('knowledge_urls', [
-            'https://www.scm.cuhk.edu.hk/en-gb/articles-redirect/236-v1-hkej/1767-2020-10-02',
+            'https://www.bucm.edu.cn/kxyj/fa905353272945948a892663ad3fbad1.htm',  # 北京中医药大学 - 内经论望色
         ])
 
         try:

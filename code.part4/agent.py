@@ -49,7 +49,7 @@ class TCMComplexionAnalysisAgent:
 
         # 初始化RAG系统
         self.knowledge_urls = knowledge_urls or [
-            "https://www.scm.cuhk.edu.hk/en-gb/articles-redirect/236-hkej/1767-2020-10-02",
+            "https://www.bucm.edu.cn/kxyj/fa905353272945948a892663ad3fbad1.htm",  # 北京中医药大学 - 内经论望色
         ]
         self._init_rag_system()
 
